@@ -24,7 +24,7 @@ async function getLatest(): Promise<MonkeyTypes.PSA[] | null> {
   if (response.status === 500) {
     if (isDevEnvironment()) {
       Notifications.addBanner(
-        "fork of monkeytype.com. Running custom build for feature idea . See 'Bigram Crunch' under modes.",
+        "NOTE: CUSTOM BUILD OF MONKEYTYPE.COM FORK. FEATURE IDEA IMPLEMENTED. SEE 'BIGRAM CRUNCH' IN MODES.",
         0,
         "exclamation-triangle",
         false
