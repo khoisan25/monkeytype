@@ -7,7 +7,13 @@
 
 # About
 
-Monkeytype is a minimalistic and customizable [typing test](https://www.monkeytype.com). It features many test modes, an account system to save your typing speed history, and user-configurable features such as themes, sounds, a smooth caret, and more. Monkeytype attempts to emulate a natural typing experience during a typing test by unobtrusively presenting the text prompts and displaying typed characters in place, providing straightforward, real-time feedback on typos, speed, and accuracy.
+### Note(khoisan25): Fork of monkeytype(see source repo).
+I've initiated this project as a fork of Monkeytype, driven by a particular fascination with the "weakpoint" mode. Noticed my typing mistakes often came down to certain pairs of characters - bigrams. Thought it'd be cool to have a mode that focuses on those, making practice more targeted. So, I made one. It samples words based on the bigrams you struggle with. 
+
+Here's where you can check it out: [here](martinnn.com). 
+[settings -> behaviour -> funbox -> bigram_crunch].
+
+Just a note on why this version exists!
 
 # Features
 
