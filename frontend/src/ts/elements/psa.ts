@@ -24,6 +24,12 @@ async function getLatest(): Promise<MonkeyTypes.PSA[] | null> {
   if (response.status === 500) {
     if (isDevEnvironment()) {
       Notifications.addBanner(
+        "fork of monkeytype.com. Running custom build for feature idea . See 'Bigram Crunch' under modes.",
+        0,
+        "exclamation-triangle",
+        false
+      );
+      Notifications.addBanner(
         "Dev Info: Backend server not running",
         0,
         "exclamation-triangle",
