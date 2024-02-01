@@ -11,6 +11,7 @@ import * as KeymapEvent from "../../observables/keymap-event";
 import * as TestWords from "../test-words";
 import * as TestInput from "../test-input";
 import * as WeakSpot from "../weak-spot";
+import * as BigramCrunch from "../bigram-crunch";
 import { getPoem } from "../poetry";
 import { getSection } from "../wikipedia";
 import * as IPGenerator from "../ip-addresses";
@@ -368,6 +369,13 @@ FunboxList.setFunboxFunctions("ascii", {
 FunboxList.setFunboxFunctions("specials", {
   getWord(): string {
     return Misc.getSpecials();
+  },
+});
+
+FunboxList.setFunboxFunctions("bigram_crunch", {
+  getWord(wordset?: Wordset): string {
+    if (wordset !== undefined) return BigramCrunch.getWord(wordset);
+    else return "";
   },
 });
 
