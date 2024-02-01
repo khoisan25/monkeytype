@@ -260,6 +260,11 @@ const list: MonkeyTypes.FunboxMetadata[] = [
     info: "TTyyppee eevveerryytthhiinngg ttwwiiccee..",
     properties: ["noLigatures"],
   },
+  {
+    name: "bigram_crunch",
+    info: "Focus on bigrams where failures occure.",
+    properties: ["changesWordsFrequency"],
+  },
 ];
 
 export function getAll(): MonkeyTypes.FunboxMetadata[] {

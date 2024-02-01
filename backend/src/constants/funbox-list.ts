@@ -105,6 +105,13 @@ const FunboxList: MonkeyTypes.FunboxMetadata[] = [
   },
   {
     canGetPb: false,
+    difficultyLevel: 0,
+    properties: ["changesWordsFrequency"],
+    frontendFunctions: ["getWord"],
+    name: "bigram_crunch",
+  },
+  {
+    canGetPb: false,
     difficultyLevel: 1,
     properties: ["changesCapitalisation"],
     frontendFunctions: ["alterText"],
