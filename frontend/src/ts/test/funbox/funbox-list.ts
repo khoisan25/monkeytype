@@ -262,7 +262,7 @@ const list: MonkeyTypes.FunboxMetadata[] = [
   },
   {
     name: "bigram_crunch",
-    info: "Focus on bigrams where failures occure.",
+    info: "Focus on character bigrams where failures occur.",
     properties: ["changesWordsFrequency"],
   },
 ];

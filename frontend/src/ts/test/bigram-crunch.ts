@@ -1,8 +1,7 @@
 import { Wordset } from "./wordset";
 
-const perBigramCount = 50;
-const bigramSamples = 20;
-const incorrectBigramPenalty = 1;
+const bigramSamples = 200;
+let totalBigramCount = 0;
 
 const bigramScores: { [bigram: string]: BigramScore } = {};
 
@@ -14,73 +13,66 @@ class BigramScore {
     this.count = 0;
   }
 
-  update(score: number): void {
-    if (this.count < perBigramCount) {
-      this.count++;
-    }
-    const adjustRate = 1.0 / this.count;
-    this.average = score * adjustRate + this.average * (1 - adjustRate);
+  increment(): void {
+    totalBigramCount++;
+    this.count++;
+    this.average = this.count / totalBigramCount;
+  }
+
+  decrement(): void {
+    totalBigramCount--;
+    this.count--;
+    this.average = this.count / totalBigramCount;
   }
 }
 
 export function updateBigramScore(
-  currentChar: string,
-  prevChar: string | null,
+  currentWord: string,
+  currentInput: string | null,
   isCorrect: boolean
 ): void {
   if (!isCorrect) {
-    const score = incorrectBigramPenalty;
-
-    const bigram = prevChar ? prevChar + currentChar : currentChar;
+    const bigramStartIndex = (currentInput?.length ?? 0) - 1;
+    const bigram = currentWord.slice(bigramStartIndex, bigramStartIndex + 2); // 2 is the bigram length
+    if (bigram.length < 2) {
+      // Sometimes single letter characters may be found reject them here.
+      return;
+    }
     if (!(bigram in bigramScores)) {
       bigramScores[bigram] = new BigramScore();
     }
-    bigramScores[bigram]?.update(score);
+    bigramScores[bigram]?.increment();
   }
 }
 
-function bigramScore(word: string): number {
+function bigramScore(word: string): [number, string[]] {
   let total = 0.0;
   let numBigrams = 0;
-
   // Use a sliding window of size 2 over the characters of the word to construct bigrams
   let prevChar = ""; // Initialize with an empty string for the first character handling
-  word.split("").forEach((currentChar, index) => {
+  const bigrams: string[] = []; // Update the type of bigrams to be an array of strings
+  word.split("").forEach((currentChar: string, index) => {
     if (index > 0) {
       // Ensure we have a pair to form a bigram
       const bigram = prevChar + currentChar; // Construct bigram from the previous and current character
       if (bigram in bigramScores) {
         total += (bigramScores[bigram] as BigramScore).average;
         numBigrams++;
+        bigrams.push(bigram);
       }
     }
     prevChar = currentChar; // Update prevChar to be the currentChar for the next iteration
   });
 
-  return numBigrams > 0 ? total / numBigrams : 0.0; // Return the average or 0 if no bigrams found
-}
-
-export function getWord2(wordset: Wordset): string {
-  let highScore;
-  let randomWord = "";
-  for (let i = 0; i < bigramSamples; i++) {
-    const newWord = wordset.randomWord("normal");
-    const newScore = bigramScore(newWord);
-    if (i === 0 || highScore === undefined || newScore > highScore) {
-      randomWord = newWord;
-      highScore = newScore;
-    }
-  }
-  return randomWord;
+  return [numBigrams > 0 ? total / numBigrams : 0.0, bigrams]; // Return the average or 0 if no bigrams found
 }
 
 export function getWord(wordset: Wordset): string {
   const sampleWords = [];
-  for (let i = 0; i < bigramSamples * 5; i++) {
+  for (let i = 0; i < bigramSamples; i++) {
     // Increase sample size to have a better chance of including weak bigrams
     sampleWords.push(wordset.randomWord("normal"));
   }
-
   // Identify weak bigrams: those with the highest scores or most occurrences of errors
   const weakBigrams = Object.keys(bigramScores)
     .sort(
@@ -91,6 +83,7 @@ export function getWord(wordset: Wordset): string {
 
   let highScore = -Infinity;
   let selectedWord = "";
+  let selectedBigrams: string[] = [];
 
   // Prefer words that contain any of the weak bigrams
   for (const word of sampleWords) {
@@ -104,11 +97,13 @@ export function getWord(wordset: Wordset): string {
     const containsWeakBigram = weakBigrams.some((bigram) =>
       wordBigrams.has(bigram)
     );
+
     if (containsWeakBigram) {
-      const newScore = bigramScore(word);
+      const [newScore, bigramsFound] = bigramScore(word);
       if (newScore > highScore) {
         selectedWord = word;
         highScore = newScore;
+        selectedBigrams = bigramsFound;
       }
     }
   }
@@ -116,17 +111,24 @@ export function getWord(wordset: Wordset): string {
   // If no word containing a weak bigram was selected, fall back to the highest scoring word
   if (selectedWord === "") {
     for (const word of sampleWords) {
-      const newScore = bigramScore(word);
+      const [newScore, bigramsFound] = bigramScore(word);
       if (newScore > highScore) {
         selectedWord = word;
         highScore = newScore;
+        selectedBigrams = bigramsFound;
       }
+    }
+  }
+  if (selectedWord === "") {
+    for (const bigram of selectedBigrams) {
+      bigramScores[bigram]?.decrement();
     }
   }
 
   return selectedWord ?? sampleWords[0]; // Fallback to the first sampled word if none match criteria
 }
 
+// Debuging purposes.
 export function logBigramScores(): boolean {
   const bigramScoresForLogging: {
     [key: string]: { average: number; count: number };
@@ -142,7 +144,7 @@ export function logBigramScores(): boolean {
     }
   });
 
-  console.log(
+  console.debug(
     "Current Bigram Scores Table:",
     JSON.stringify(bigramScoresForLogging, null, 2)
   );

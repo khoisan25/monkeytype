@@ -41,7 +41,6 @@ let correctShiftUsed = true;
 let isKoCompiling = false;
 let isBackspace: boolean;
 let incorrectShiftsInARow = 0;
-let lastChar: string | null = null; // Used in bigram crunch mode.
 
 const wordsInput = document.getElementById("wordsInput") as HTMLInputElement;
 const koInputVisual = document.getElementById("koInputVisual") as HTMLElement;
@@ -586,25 +585,13 @@ function handleChar(
     thisCharCorrect
   );
 
-  if (charIndex > 0 || Config.mode === "zen") {
-    // Assuming `charIndex` tracks the position in the word.
-    // For non-zen mode, calculate the bigram based on the current and previous characters in the word.
-    // For zen mode, use `lastChar` and the current `char`.
-    const prevChar =
-      Config.mode === "zen"
-        ? lastChar
-        : TestWords.words.getCurrent()[charIndex - 1] ?? "";
-    BigramCrunch.updateBigramScore(
-      char, // Current character
-      prevChar, // Previous character
-      thisCharCorrect
-    );
-    console.debug("Updated bigram score for", char, prevChar, thisCharCorrect);
-    BigramCrunch.logBigramScores();
-  }
-
-  // Update `lastChar` for the next round.
-  lastChar = char;
+  BigramCrunch.updateBigramScore(
+    TestWords.words.getCurrent(),
+    TestInput.input.current,
+    thisCharCorrect
+  );
+  // Debug bigram map freq map
+  BigramCrunch.logBigramScores();
 
   if (thisCharCorrect) {
     Sound.playClick();
