@@ -1,28 +1,41 @@
+import { randomElementFromArray } from "../utils/misc";
 import { Wordset } from "./wordset";
 
-const bigramSamples = 200;
-let totalBigramCount = 0;
-
 const bigramScores: { [bigram: string]: BigramScore } = {};
+const wordSampleSize = 40;
+const wordFreqMultiplier = 1.8;
+const maxWeightedWords = 300;
 
 class BigramScore {
-  public average: number;
-  public count: number;
+  public score: number;
+  public misses: number;
+  public occurrences: number;
+
   constructor() {
-    this.average = 0.0;
-    this.count = 0;
+    this.score = 0.0;
+    this.misses = 0;
+    // Initialize occurrences t 2. This does two things.
+    // 1. Avoid log(0) in the updateScore method. 2. Occurrences only updatded during word selection. Score needs to be updated as test progresses.
+    this.occurrences = 2;
   }
 
-  increment(): void {
-    totalBigramCount++;
-    this.count++;
-    this.average = this.count / totalBigramCount;
+  // Update scoring to consider both the count of failures and the log of occurrences
+  updateScore(): void {
+    if (this.occurrences > 0 && this.misses > 0) {
+      // Ensure we don't divide by zero or take log of zero
+      this.score =
+        (this.misses / this.occurrences) * Math.log(this.occurrences);
+    }
   }
 
-  decrement(): void {
-    totalBigramCount--;
-    this.count--;
-    this.average = this.count / totalBigramCount;
+  incrementMisses(): void {
+    this.misses++;
+    this.updateScore();
+  }
+
+  incrementOccurrences(): void {
+    this.occurrences++;
+    this.updateScore();
   }
 }
 
@@ -41,105 +54,91 @@ export function updateBigramScore(
     if (!(bigram in bigramScores)) {
       bigramScores[bigram] = new BigramScore();
     }
-    bigramScores[bigram]?.increment();
+    bigramScores[bigram]?.incrementMisses();
   }
-}
-
-function bigramScore(word: string): [number, string[]] {
-  let total = 0.0;
-  let numBigrams = 0;
-  // Use a sliding window of size 2 over the characters of the word to construct bigrams
-  let prevChar = ""; // Initialize with an empty string for the first character handling
-  const bigrams: string[] = []; // Update the type of bigrams to be an array of strings
-  word.split("").forEach((currentChar: string, index) => {
-    if (index > 0) {
-      // Ensure we have a pair to form a bigram
-      const bigram = prevChar + currentChar; // Construct bigram from the previous and current character
-      if (bigram in bigramScores) {
-        total += (bigramScores[bigram] as BigramScore).average;
-        numBigrams++;
-        bigrams.push(bigram);
-      }
-    }
-    prevChar = currentChar; // Update prevChar to be the currentChar for the next iteration
-  });
-
-  return [numBigrams > 0 ? total / numBigrams : 0.0, bigrams]; // Return the average or 0 if no bigrams found
 }
 
 export function getWord(wordset: Wordset): string {
-  const sampleWords = [];
-  for (let i = 0; i < bigramSamples; i++) {
-    // Increase sample size to have a better chance of including weak bigrams
-    sampleWords.push(wordset.randomWord("normal"));
-  }
-  // Identify weak bigrams: those with the highest scores or most occurrences of errors
+  // Identify weak bigrams with the highest scores
   const weakBigrams = Object.keys(bigramScores)
     .sort(
-      (a, b) =>
-        (bigramScores[b]?.average ?? 0) - (bigramScores[a]?.average ?? 0)
+      (a, b) => (bigramScores[b]?.score ?? 0) - (bigramScores[a]?.score ?? 0)
     )
     .slice(0, 10);
 
-  let highScore = -Infinity;
-  let selectedWord = "";
-  let selectedBigrams: string[] = [];
+  // Select words that contain any of the weak bigrams
+  let filteredWords = wordset.words.filter((word) =>
+    weakBigrams.some((bigram) => word.includes(bigram))
+  );
 
-  // Prefer words that contain any of the weak bigrams
-  for (const word of sampleWords) {
-    const wordBigrams = new Set();
-    for (let i = 0; i < word.length - 1; i++) {
-      if (word[i] && word[i + 1]) {
-        wordBigrams.add((word[i] ?? "") + (word[i + 1] ?? ""));
+  // If the filtered list is too short, add more words
+  if (filteredWords.length < wordSampleSize) {
+    const additionalWords = wordset.words.filter(
+      (word) => !filteredWords.includes(word)
+    );
+    filteredWords = filteredWords.concat(
+      additionalWords.slice(0, wordSampleSize - filteredWords.length)
+    );
+  }
+
+  // Multiply the frequency of each word based on its bigram score
+  const weightedWords: string[] = [];
+  let currentCount = 0;
+
+  filteredWords.forEach((word) => {
+    let weight = wordFreqMultiplier;
+    weakBigrams.forEach((bigram) => {
+      if (word.includes(bigram) && bigramScores[bigram]) {
+        weight *= Math.max(bigramScores[bigram]?.score ?? 0, 1); // Ensure weight is at least 1
       }
-    }
+    });
+    const additions = Math.ceil(weight);
 
-    const containsWeakBigram = weakBigrams.some((bigram) =>
-      wordBigrams.has(bigram)
+    // Limit the number of additions based on the remaining space in weightedWords
+    const allowedAdditions = Math.min(
+      additions,
+      maxWeightedWords - currentCount
     );
 
-    if (containsWeakBigram) {
-      const [newScore, bigramsFound] = bigramScore(word);
-      if (newScore > highScore) {
-        selectedWord = word;
-        highScore = newScore;
-        selectedBigrams = bigramsFound;
+    for (let i = 0; i < allowedAdditions; i++) {
+      weightedWords.push(word);
+      currentCount++;
+
+      // Stop if we reach the maximum limit
+      if (currentCount >= maxWeightedWords) break;
+    }
+  });
+
+  let chosenWord = randomElementFromArray(weightedWords);
+
+  // Increment occurrences for each bigram in the chosen word if we are tracking
+  if (chosenWord) {
+    for (let i = 0; i < chosenWord.length - 1; i++) {
+      const bigram = chosenWord.substring(i, i + 2);
+      if (bigramScores[bigram]) {
+        bigramScores[bigram]?.incrementOccurrences();
+        bigramScores[bigram]?.updateScore();
       }
     }
+  } else {
+    chosenWord = randomElementFromArray(wordset.words);
   }
-
-  // If no word containing a weak bigram was selected, fall back to the highest scoring word
-  if (selectedWord === "") {
-    for (const word of sampleWords) {
-      const [newScore, bigramsFound] = bigramScore(word);
-      if (newScore > highScore) {
-        selectedWord = word;
-        highScore = newScore;
-        selectedBigrams = bigramsFound;
-      }
-    }
-  }
-  if (selectedWord === "") {
-    for (const bigram of selectedBigrams) {
-      bigramScores[bigram]?.decrement();
-    }
-  }
-
-  return selectedWord ?? sampleWords[0]; // Fallback to the first sampled word if none match criteria
+  return chosenWord;
 }
 
 // Debuging purposes.
 export function logBigramScores(): boolean {
   const bigramScoresForLogging: {
-    [key: string]: { average: number; count: number };
+    [key: string]: { score: number; occurrences: number; misses: number };
   } = {};
 
   Object.keys(bigramScores).forEach((bigram) => {
     const score = bigramScores[bigram];
     if (score) {
       bigramScoresForLogging[bigram] = {
-        average: score.average,
-        count: score.count,
+        score: score.score,
+        misses: score.misses,
+        occurrences: score.occurrences,
       };
     }
   });
