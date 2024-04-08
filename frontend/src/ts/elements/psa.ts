@@ -29,12 +29,12 @@ async function getLatest(): Promise<MonkeyTypes.PSA[] | null> {
         "exclamation-triangle",
         false
       );
-      Notifications.addBanner(
-        "Dev Info: Backend server not running",
-        0,
-        "exclamation-triangle",
-        false
-      );
+      //Notifications.addBanner(
+      //  "Dev Info: Backend server not running",
+      //  0,
+      //  "exclamation-triangle",
+      //  false
+      //);
     } else {
       Notifications.addBanner(
         "Looks like the server is experiencing maintenance or some unexpected down time.<br>Check the <a target= '_blank' href='https://monkeytype.instatus.com/'>status page</a> or <a target= '_blank' href='https://twitter.com/monkeytypegame'>Twitter</a> for more information.",
