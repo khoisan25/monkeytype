@@ -4,7 +4,7 @@ services:
     image: node:gallium-bullseye
     restart: on-failure
     ports:
-      - "3000:3000"
+      - "3010:3010"
     volumes:
       - ../:/monkeytype
     user: node

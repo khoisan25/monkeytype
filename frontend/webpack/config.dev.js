@@ -11,12 +11,15 @@ const DEV_CONFIG = {
   devtool: "inline-source-map",
   devServer: {
     compress: true,
-    port: 3000,
+    port: 3010,
     open: true,
     hot: false,
     historyApiFallback: true,
     client: {
       overlay: false,
+    },
+    nodeOptions: {
+      max_old_space_size: 512,
     },
   },
   plugins: [

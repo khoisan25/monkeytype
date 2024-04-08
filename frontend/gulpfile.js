@@ -9,6 +9,9 @@ const webpackProdConfig = require("./webpack/config.prod.js");
 const JSONValidation = require("./scripts/json-validation");
 const eslintConfig = "../.eslintrc.json";
 
+// Set memory limit for gulp
+process.env.NODE_OPTIONS = "--max-old-space-size=512";
+
 task("lint", function () {
   return src(["./src/ts/**/*.ts"])
     .pipe(eslint(eslintConfig))
