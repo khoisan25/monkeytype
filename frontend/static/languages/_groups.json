@@ -330,6 +330,10 @@
     "languages": ["swahili_1k"]
   },
   {
+    "name": "bemba",
+    "languages": ["bemba", "bemba_1k", "bemba_10k"]
+  },
+  {
     "name": "maori",
     "languages": ["maori_1k"]
   },
@@ -400,7 +404,7 @@
   {
     "name": "gujarati",
     "languages": ["gujarati"]
-  }, 
+  },
   {
     "name": "nepali",
     "languages": ["nepali", "nepali_1k"]
